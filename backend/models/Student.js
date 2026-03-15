@@ -17,7 +17,10 @@ const Student = sequelize.define('Student', {
     email:{
         type: DataTypes.STRING,
         allowNull:false,
-        unique:true
+        unique:true,
+        validate:{
+            isEmail:true
+        }
     },
 
     password:{
@@ -31,14 +34,20 @@ const Student = sequelize.define('Student', {
         unique:true
     },
 
+    contactNumber:{
+        type: DataTypes.STRING
+    },
+
+    profilePicture:{
+        type: DataTypes.STRING
+    },
+
     branch:{
-        type: DataTypes.STRING,
-        allowNull:true
+        type: DataTypes.STRING
     },
 
     year:{
-        type: DataTypes.INTEGER,
-        allowNull:true
+        type: DataTypes.INTEGER
     },
 
     CGPA:{
@@ -46,59 +55,50 @@ const Student = sequelize.define('Student', {
         defaultValue:0
     },
 
-    contactNumber:{
-        type: DataTypes.STRING,
-        allowNull:true
-    },
-
     permanentAddress:{
-        type: DataTypes.TEXT,
-        allowNull:true
+        type: DataTypes.TEXT
     },
 
     currentAddress:{
-        type: DataTypes.TEXT,
-        allowNull:true
-    },
-
-    profilePicture:{
-        type: DataTypes.STRING,
-        allowNull:true
+        type: DataTypes.TEXT
     },
 
     parentName:{
-        type: DataTypes.STRING,
-        allowNull:true
+        type: DataTypes.STRING
     },
 
     parentEmail:{
-        type: DataTypes.STRING,
-        allowNull:true
+        type: DataTypes.STRING
     },
 
     parentContactNumber:{
-        type: DataTypes.STRING,
-        allowNull:true
+        type: DataTypes.STRING
     },
 
     guardianName:{
-        type: DataTypes.STRING,
-        allowNull:true
+        type: DataTypes.STRING
     },
 
     guardianEmail:{
-        type: DataTypes.STRING,
-        allowNull:true
+        type: DataTypes.STRING
     },
 
     guardianContactNumber:{
-        type: DataTypes.STRING,
-        allowNull:true
+        type: DataTypes.STRING
     },
 
     guardianAddress:{
-        type: DataTypes.TEXT,
-        allowNull:true
+        type: DataTypes.TEXT
+    },
+
+    profileCompleted:{
+        type:DataTypes.BOOLEAN,
+        defaultValue:false
+    },
+
+    wantsHostelNextYear:{
+        type:DataTypes.BOOLEAN,
+        defaultValue:false
     }
 
 },{

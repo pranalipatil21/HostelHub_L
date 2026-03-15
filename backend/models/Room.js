@@ -28,6 +28,11 @@ const Room = sequelize.define('Room',{
     capacity:{
         type:DataTypes.INTEGER,
         defaultValue:3
+    },
+
+    occupiedBeds:{
+        type:DataTypes.INTEGER,
+        defaultValue:0
     }
 
 },{
