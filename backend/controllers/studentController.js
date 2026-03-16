@@ -1,7 +1,17 @@
-const { Student, Complaint, Leave, Movement, Room } = require('../models');
+const {
+    Student,
+    Complaint,
+    Leave,
+    Movement,
+    Room,
+    RoomSelection,
+    AllocationCycle,
+    StudentAllocation
+} = require('../models');
 
+const sequelize = require('../config/database');
 
-// ================= PROFILE =================
+// PROFILE 
 
 exports.getProfile = async (req, res) => {
 
@@ -75,7 +85,9 @@ exports.updateHostelPreference = async (req, res) => {
 
 
 
-// ================= ROOM =================
+/* =====================================================
+                    ROOM SECTION
+===================================================== */
 
 exports.getMyRoom = async (req, res) => {
 
@@ -100,7 +112,22 @@ exports.getAvailableRooms = async (req, res) => {
 
     try {
 
-        const rooms = await Room.findAll();
+        const cycle = await AllocationCycle.findOne({
+            where: { status: "selection_open" }
+        });
+
+        if (!cycle) {
+            return res.status(400).json({
+                message: "Room selection not open"
+            });
+        }
+
+        const rooms = await Room.findAll({
+            where: {
+                AllocationCycleId: cycle.id,
+                status: "available"
+            }
+        });
 
         const availableRooms = rooms.filter(
             room => room.occupiedBeds < room.capacity
@@ -117,13 +144,14 @@ exports.getAvailableRooms = async (req, res) => {
 };
 
 
+
 exports.selectRoom = async (req, res) => {
 
     const transaction = await sequelize.transaction();
 
     try {
 
-        const { roomId } = req.body;
+        const { roomNumber } = req.body;
 
         const student = await Student.findByPk(req.user.id, { transaction });
 
@@ -133,33 +161,91 @@ exports.selectRoom = async (req, res) => {
             });
         }
 
-        const room = await Room.findByPk(roomId, { transaction });
+        const cycle = await AllocationCycle.findOne({
+            where: { status: "selection_open" },
+            transaction
+        });
+
+        if (!cycle) {
+            return res.status(400).json({
+                message: "Room selection not active"
+            });
+        }
+
+        const allocation = await StudentAllocation.findOne({
+            where: {
+                StudentId: student.id,
+                AllocationCycleId: cycle.id
+            },
+            transaction
+        });
+
+        if (!allocation || allocation.status !== "eligible") {
+            return res.status(403).json({
+                message: "Student not eligible for room selection"
+            });
+        }
+
+        const room = await Room.findOne({
+            where: {
+                roomNumber,
+                AllocationCycleId: cycle.id
+            },
+            transaction
+        });
 
         if (!room) {
-            return res.status(404).json({ message: "Room not found" });
+            return res.status(404).json({
+                message: "Room not found"
+            });
+        }
+
+        if (room.status === "reserved") {
+            return res.status(400).json({
+                message: "Room reserved for freshers"
+            });
         }
 
         if (room.occupiedBeds >= room.capacity) {
-            return res.status(400).json({ message: "Room full" });
+            return res.status(400).json({
+                message: "Room full"
+            });
         }
 
         room.occupiedBeds += 1;
+
+        if (room.occupiedBeds === room.capacity) {
+            room.status = "full";
+        }
+
         student.RoomId = room.id;
+
+        allocation.status = "allocated";
+
+        await RoomSelection.create({
+            StudentId: student.id,
+            RoomId: room.id,
+            AllocationCycleId: cycle.id
+        }, { transaction });
 
         await room.save({ transaction });
         await student.save({ transaction });
+        await allocation.save({ transaction });
 
         await transaction.commit();
 
         res.json({
-            message: "Room allocated successfully"
+            message: "Room allocated successfully",
+            roomNumber: room.roomNumber
         });
 
     } catch (error) {
 
         await transaction.rollback();
 
-        res.status(500).json({ message: error.message });
+        res.status(500).json({
+            message: error.message
+        });
 
     }
 
@@ -167,7 +253,9 @@ exports.selectRoom = async (req, res) => {
 
 
 
-// ================= COMPLAINT =================
+/* =====================================================
+                    COMPLAINT
+===================================================== */
 
 exports.submitComplaint = async (req, res) => {
 
@@ -239,7 +327,9 @@ exports.getComplaintById = async (req, res) => {
 
 
 
-// ================= LEAVE =================
+/* =====================================================
+                        LEAVE
+===================================================== */
 
 exports.applyLeave = async (req, res) => {
 
@@ -311,7 +401,7 @@ exports.getLeaveById = async (req, res) => {
 
 
 
-// ================= MOVEMENT =================
+// MOVEMENT
 
 exports.markOut = async (req, res) => {
 
@@ -377,6 +467,7 @@ exports.markIn = async (req, res) => {
     }
 
 };
+
 
 exports.getMovementHistory = async (req, res) => {
 

@@ -11,17 +11,6 @@ const Room = sequelize.define('Room',{
 
     roomNumber:{
         type:DataTypes.STRING,
-        unique:true,
-        allowNull:false
-    },
-
-    block:{
-        type:DataTypes.STRING,
-        allowNull:false
-    },
-
-    floor:{
-        type:DataTypes.INTEGER,
         allowNull:false
     },
 
@@ -33,6 +22,16 @@ const Room = sequelize.define('Room',{
     occupiedBeds:{
         type:DataTypes.INTEGER,
         defaultValue:0
+    },
+
+    status:{
+        type:DataTypes.ENUM(
+            'available',
+            'full',
+            'reserved',
+            'maintenance'
+        ),
+        defaultValue:'available'
     }
 
 },{

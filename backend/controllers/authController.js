@@ -1,124 +1,194 @@
-const { Student, Warden } = require('../models');
+const { Student, Warden, Room } = require('../models');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
+const sequelize = require('../config/database');
 
 
-// Register Student
+// =========================
+// STUDENT REGISTER
+// =========================
+
 exports.userRegister = async (req, res) => {
+
+    const transaction = await sequelize.transaction();
+
     try {
 
-        const { name, email, password, PRN } = req.body;
+        const { name, email, password, PRN, roomNumber } = req.body;
 
-        // Validate input
-        if (!name || !email || !password || !PRN) {
-            return res.status(400).json({ message: 'All fields are required' });
+        if (!name || !email || !password || !PRN || !roomNumber) {
+            return res.status(400).json({
+                message: 'All fields including roomNumber are required'
+            });
         }
 
-        // Check existing user by checking if email or PRN exist
         const existingUser = await Student.findOne({
             where: {
-                [Op.or]: [
-                    { email },
-                    { PRN }
-                ]
+                [Op.or]: [{ email }, { PRN }]
             }
         });
 
         if (existingUser) {
-            return res.status(400).json({ message: 'User already exists' });
+            return res.status(400).json({
+                message: 'User already exists'
+            });
         }
 
-        // Hash password
+        const room = await Room.findOne({
+            where: { roomNumber },
+            transaction
+        });
+
+        if (!room) {
+            return res.status(404).json({
+                message: 'Room not found'
+            });
+        }
+
+        if (room.occupiedBeds >= room.capacity) {
+            return res.status(400).json({
+                message: 'Room already full'
+            });
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create user
-        await Student.create({
+        const student = await Student.create({
+
             name,
             email,
             PRN,
-            password: hashedPassword
+            password: hashedPassword,
+            RoomId: room.id
+
+        }, { transaction });
+
+        room.occupiedBeds += 1;
+
+        if (room.occupiedBeds === room.capacity) {
+            room.status = "full";
+        }
+
+        await room.save({ transaction });
+
+        await transaction.commit();
+
+        res.status(201).json({
+            message: 'User registered successfully'
         });
 
-        res.status(201).json({ message: 'User registered successfully' });
-
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+
+        await transaction.rollback();
+
+        res.status(500).json({
+            message: 'Server error',
+            error: error.message
+        });
     }
 };
 
 
-// Student Login
+
+// =========================
+// STUDENT LOGIN
+// =========================
+
 exports.userLogin = async (req, res) => {
+
     try {
 
         const { email, password, PRN } = req.body;
 
         if ((!email && !PRN) || !password) {
-            return res.status(400).json({ message: 'Email or PRN and password are required' });
+            return res.status(400).json({
+                message: 'Email or PRN and password are required'
+            });
         }
 
-        // Find user
         const user = await Student.findOne({
             where: {
-                [Op.or]: [
-                    { email },
-                    { PRN }
-                ]
+                [Op.or]: [{ email }, { PRN }]
             }
         });
 
         if (!user) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            return res.status(400).json({
+                message: 'Invalid credentials'
+            });
         }
 
-        // Compare password
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            return res.status(400).json({
+                message: 'Invalid credentials'
+            });
         }
 
-        // Create token
         const userToken = jwt.sign(
-            { id: user.id },
+            { id: user.id, role: "student" },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
 
-        // Send cookie
         res.cookie('userToken', userToken, {
+
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             maxAge: 24 * 60 * 60 * 1000
-        }).status(200).json({ message: 'Login successful' });
+
+        }).status(200).json({
+            message: 'Login successful'
+        });
 
     } catch (error) {
-        res.status(500).json({ message: 'Internal Server error', error: error.message });
+
+        res.status(500).json({
+            message: 'Internal Server error',
+            error: error.message
+        });
+
     }
 };
 
 
-// Student Logout
+
+// =========================
+// STUDENT LOGOUT
+// =========================
+
 exports.userLogout = (req, res) => {
 
     try {
 
         res.clearCookie('userToken', {
+
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict'
-        }).status(200).json({ message: 'Logout successful' });
+
+        }).status(200).json({
+            message: 'Logout successful'
+        });
 
     } catch (error) {
-        res.status(500).json({ message: 'Internal Server error' });
-    }
 
+        res.status(500).json({
+            message: 'Internal Server error'
+        });
+
+    }
 };
 
 
-// Warden Login
+
+// =========================
+// WARDEN LOGIN
+// =========================
+
 exports.wardenLogin = async (req, res) => {
 
     try {
@@ -126,7 +196,9 @@ exports.wardenLogin = async (req, res) => {
         const { email, password } = req.body;
 
         if (!email || !password) {
-            return res.status(400).json({ message: 'Email and password are required' });
+            return res.status(400).json({
+                message: 'Email and password are required'
+            });
         }
 
         const warden = await Warden.findOne({
@@ -134,54 +206,82 @@ exports.wardenLogin = async (req, res) => {
         });
 
         if (!warden) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            return res.status(400).json({
+                message: 'Invalid credentials'
+            });
         }
 
         const isMatch = await bcrypt.compare(password, warden.password);
 
         if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            return res.status(400).json({
+                message: 'Invalid credentials'
+            });
         }
 
         const wardenToken = jwt.sign(
-            { id: warden.id },
+
+            { id: warden.id, role: "warden" },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
+
         );
 
         res.cookie('wardenToken', wardenToken, {
+
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             maxAge: 24 * 60 * 60 * 1000
-        }).status(200).json({ message: 'Login successful' });
+
+        }).status(200).json({
+            message: 'Login successful'
+        });
 
     } catch (error) {
-        res.status(500).json({ message: 'Internal Server error' });
-    }
 
+        res.status(500).json({
+            message: 'Internal Server error'
+        });
+
+    }
 };
 
 
-// Warden Logout
+
+// =========================
+// WARDEN LOGOUT
+// =========================
+
 exports.wardenLogout = (req, res) => {
 
     try {
 
         res.clearCookie('wardenToken', {
+
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict'
-        }).status(200).json({ message: 'Logout successful' });
+
+        }).status(200).json({
+            message: 'Logout successful'
+        });
 
     } catch (error) {
-        res.status(500).json({ message: 'Internal Server error' });
-    }
 
+        res.status(500).json({
+            message: 'Internal Server error'
+        });
+
+    }
 };
 
 
-// Admin Login
+
+// =========================
+// ADMIN LOGIN
+// =========================
+
 exports.adminLogin = async (req, res) => {
 
     try {
@@ -189,51 +289,76 @@ exports.adminLogin = async (req, res) => {
         const { email, password } = req.body;
 
         if (!email || !password) {
-            return res.status(400).json({ message: 'Email and password required' });
+            return res.status(400).json({
+                message: 'Email and password required'
+            });
         }
 
         if (
             email !== process.env.ADMIN_EMAIL ||
             password !== process.env.ADMIN_PASSWORD
         ) {
-            return res.status(401).json({ message: 'Invalid admin credentials' });
+            return res.status(401).json({
+                message: 'Invalid admin credentials'
+            });
         }
 
         const adminToken = jwt.sign(
+
             { role: 'admin' },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
+
         );
 
         res.cookie('adminToken', adminToken, {
+
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             maxAge: 24 * 60 * 60 * 1000
-        }).status(200).json({ message: 'Admin login successful' });
+
+        }).status(200).json({
+            message: 'Admin login successful'
+        });
 
     }
     catch (error) {
-        res.status(500).json({ message: 'Server error' });
-    }
 
+        res.status(500).json({
+            message: 'Server error'
+        });
+
+    }
 };
 
 
-// Admin Logout
+
+// =========================
+// ADMIN LOGOUT
+// =========================
+
 exports.adminLogout = (req, res) => {
 
     try {
 
         res.clearCookie('adminToken', {
+
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict'
-        }).status(200).json({ message: 'Admin logout successful' });
+
+        }).status(200).json({
+            message: 'Admin logout successful'
+        });
 
     }
     catch (error) {
-        res.status(500).json({ message: 'Server error' });
+
+        res.status(500).json({
+            message: 'Server error'
+        });
+
     }
 
 };

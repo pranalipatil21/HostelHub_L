@@ -7,17 +7,23 @@ exports.getProfile = async (req, res) => {
 
     try {
 
-        const warden = await Warden.findByPk(req.user.id);
+        const warden = await Warden.findByPk(req.user.id, {
+            attributes: { exclude: ["password"] }
+        });
 
         if (!warden) {
-            return res.status(404).json({ message: "Warden not found" });
+            return res.status(404).json({
+                message: "Warden not found"
+            });
         }
 
         res.json(warden);
 
     } catch (error) {
 
-        res.status(500).json({ error: error.message });
+        res.status(500).json({
+            error: error.message
+        });
 
     }
 
@@ -32,10 +38,14 @@ exports.updateProfile = async (req, res) => {
         const warden = await Warden.findByPk(req.user.id);
 
         if (!warden) {
-            return res.status(404).json({ message: "Warden not found" });
+            return res.status(404).json({
+                message: "Warden not found"
+            });
         }
 
-        await warden.update(req.body);
+        const { password, ...data } = req.body;
+
+        await warden.update(data);
 
         res.json({
             message: "Profile updated successfully",
@@ -44,7 +54,9 @@ exports.updateProfile = async (req, res) => {
 
     } catch (error) {
 
-        res.status(500).json({ error: error.message });
+        res.status(500).json({
+            error: error.message
+        });
 
     }
 
@@ -52,22 +64,29 @@ exports.updateProfile = async (req, res) => {
 
 
 
-// ================= COMPLAINTS =================
+/* =====================================================
+                        COMPLAINTS
+===================================================== */
 
 exports.getAllComplaints = async (req, res) => {
 
     try {
 
         const complaints = await Complaint.findAll({
-            include: [Student],
-            order: [['createdAt', 'DESC']]
+            include: [{
+                model: Student,
+                attributes: ["id", "name", "PRN", "email"]
+            }],
+            order: [["createdAt", "DESC"]]
         });
 
         res.json(complaints);
 
     } catch (error) {
 
-        res.status(500).json({ error: error.message });
+        res.status(500).json({
+            error: error.message
+        });
 
     }
 
@@ -80,18 +99,25 @@ exports.getComplaintById = async (req, res) => {
     try {
 
         const complaint = await Complaint.findByPk(req.params.id, {
-            include: [Student]
+            include: [{
+                model: Student,
+                attributes: ["id", "name", "PRN", "email"]
+            }]
         });
 
         if (!complaint) {
-            return res.status(404).json({ message: "Complaint not found" });
+            return res.status(404).json({
+                message: "Complaint not found"
+            });
         }
 
         res.json(complaint);
 
     } catch (error) {
 
-        res.status(500).json({ error: error.message });
+        res.status(500).json({
+            error: error.message
+        });
 
     }
 
@@ -105,9 +131,13 @@ exports.updateComplaintStatus = async (req, res) => {
 
         const { status } = req.body;
 
-        const allowed = ["Open","In Progress","Resolved"];
+        const allowedStatuses = [
+            "Open",
+            "In Progress",
+            "Resolved"
+        ];
 
-        if (!allowed.includes(status)) {
+        if (!allowedStatuses.includes(status)) {
             return res.status(400).json({
                 message: "Invalid status"
             });
@@ -125,39 +155,52 @@ exports.updateComplaintStatus = async (req, res) => {
 
         if (status === "Resolved") {
             complaint.resolvedAt = new Date();
+        } else {
+            complaint.resolvedAt = null;
         }
 
         await complaint.save();
 
         res.json({
-            message: "Complaint updated",
+            message: "Complaint updated successfully",
             complaint
         });
 
     } catch (error) {
-        res.status(500).json({ message: error.message });
+
+        res.status(500).json({
+            message: error.message
+        });
+
     }
 
 };
 
 
 
-// ================= LEAVE =================
+/* =====================================================
+                            LEAVE
+===================================================== */
 
 exports.getAllLeaveApplications = async (req, res) => {
 
     try {
 
         const leaves = await Leave.findAll({
-            include: [Student],
-            order: [['createdAt', 'DESC']]
+            include: [{
+                model: Student,
+                attributes: ["id", "name", "PRN", "email"]
+            }],
+            order: [["createdAt", "DESC"]]
         });
 
         res.json(leaves);
 
     } catch (error) {
 
-        res.status(500).json({ error: error.message });
+        res.status(500).json({
+            error: error.message
+        });
 
     }
 
@@ -170,18 +213,25 @@ exports.getLeaveApplicationById = async (req, res) => {
     try {
 
         const leave = await Leave.findByPk(req.params.id, {
-            include: [Student]
+            include: [{
+                model: Student,
+                attributes: ["id", "name", "PRN", "email"]
+            }]
         });
 
         if (!leave) {
-            return res.status(404).json({ message: "Leave not found" });
+            return res.status(404).json({
+                message: "Leave not found"
+            });
         }
 
         res.json(leave);
 
     } catch (error) {
 
-        res.status(500).json({ error: error.message });
+        res.status(500).json({
+            error: error.message
+        });
 
     }
 
@@ -195,10 +245,24 @@ exports.updateLeaveApplicationStatus = async (req, res) => {
 
         const { status } = req.body;
 
+        const allowedStatuses = [
+            "Pending",
+            "Approved",
+            "Rejected"
+        ];
+
+        if (!allowedStatuses.includes(status)) {
+            return res.status(400).json({
+                message: "Invalid leave status"
+            });
+        }
+
         const leave = await Leave.findByPk(req.params.id);
 
         if (!leave) {
-            return res.status(404).json({ message: "Leave not found" });
+            return res.status(404).json({
+                message: "Leave not found"
+            });
         }
 
         leave.status = status;
@@ -208,13 +272,15 @@ exports.updateLeaveApplicationStatus = async (req, res) => {
         await leave.save();
 
         res.json({
-            message: "Leave status updated",
+            message: "Leave status updated successfully",
             leave
         });
 
     } catch (error) {
 
-        res.status(500).json({ error: error.message });
+        res.status(500).json({
+            error: error.message
+        });
 
     }
 
