@@ -1,20 +1,44 @@
 const express = require("express");
 const router = express.Router();
-const { userRegister, userLogin, wardenLogin, wardenLogout, userLogout, adminLogin, adminLogout } = require("../controller/authController");
 
-// Register route
+const {
+    userRegister,
+    userLogin,
+    userLogout,
+    wardenLogin,
+    wardenLogout,
+    adminLogin,
+    adminLogout
+} = require("../controllers/authController");
+
+
+// ================= STUDENT =================
+
+// register student
 router.post("/register", userRegister);
-// Login route
+
+// login student
 router.post("/login", userLogin);
-// User logout route
+
+// logout student
 router.post("/logout", userLogout);
-// Warden login route
+
+
+// ================= WARDEN =================
+
+// warden login
 router.post("/warden/login", wardenLogin);
-// Warden logout route
+
+// warden logout
 router.post("/warden/logout", wardenLogout);
-// Admin login route
+
+
+// ================= ADMIN =================
+
+// admin login
 router.post("/admin/login", adminLogin);
-// Admin logout route  
+
+// admin logout
 router.post("/admin/logout", adminLogout);
 
 

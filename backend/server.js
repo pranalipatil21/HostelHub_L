@@ -11,6 +11,9 @@ const { sequelize } = require('./models');
 
 // Import routes
 const authRoutes = require('./routes/authRoute');
+const studentRoutes = require('./routes/studentRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const wardenRoutes = require('./routes/wardenRoutes');
 
 
 // Initialize Express app
@@ -30,6 +33,9 @@ app.use(cookieParser());
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/student', studentRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/warden', wardenRoutes);
 
 
 
