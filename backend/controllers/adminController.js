@@ -166,6 +166,71 @@ exports.getAllStudents = async (req, res) => {
 };
 
 
+exports.changeRoomNumber = async (req, res) => {
+
+    try {
+        const { studentId, roomNumber } = req.body;
+
+        const student = await Student.findByPk(studentId);
+        if (!student) {
+            return res.status(404).json({
+                message: "Student not found"
+            });
+        }
+        
+        const newRoom = await Room.findOne({
+            where: { roomNumber }
+        });
+
+        if (!newRoom) {
+            return res.status(404).json({
+                message: "Room not found"
+            });
+        }
+
+        if (newRoom.occupiedBeds >= newRoom.capacity) {
+            return res.status(400).json({
+                message: "Room is full"
+            });
+        }
+
+        if (student.RoomId) {
+
+            const oldRoom = await Room.findByPk(student.RoomId);
+
+            if (oldRoom) {
+                oldRoom.occupiedBeds -= 1;
+                await oldRoom.save();
+            }
+
+        }
+
+        newRoom.occupiedBeds += 1;
+
+        if (newRoom.occupiedBeds === newRoom.capacity) {
+            newRoom.status = "full";
+        }
+
+        await newRoom.save();
+
+        student.RoomId = newRoom.id;
+
+        await student.save();
+
+        res.json({
+            message: "Student room updated successfully"
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            error: error.message
+        });
+
+    }
+
+};
+
 
 exports.getStudentById = async (req, res) => {
 

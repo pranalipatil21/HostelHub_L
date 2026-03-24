@@ -28,6 +28,9 @@ router.delete("/wardens/:id", verifyAdmin, adminController.deleteWarden);
 // get all students
 router.get("/students", verifyAdmin, adminController.getAllStudents);
 
+// change room number allocation
+router.post("/students/change-room", verifyAdmin, adminController.changeRoomNumber);
+
 // student details
 router.get("/students/:id", verifyAdmin, adminController.getStudentById);
 
