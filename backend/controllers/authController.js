@@ -100,6 +100,7 @@ exports.userLogin = async (req, res) => {
     try {
 
         const { email, password, PRN } = req.body;
+        console.log("REQ BODY:", req.body);
 
         if ((!email && !PRN) || !password) {
             return res.status(400).json({
@@ -107,9 +108,14 @@ exports.userLogin = async (req, res) => {
             });
         }
 
+        const conditions = [];
+
+        if (email) conditions.push({ email });
+        if (PRN) conditions.push({ PRN });
+
         const user = await Student.findOne({
             where: {
-                [Op.or]: [{ email }, { PRN }]
+                [Op.or]: conditions
             }
         });
 
@@ -133,21 +139,21 @@ exports.userLogin = async (req, res) => {
             { expiresIn: '24h' }
         );
 
-        res.cookie('userToken', userToken, {
-
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 24 * 60 * 60 * 1000
-
-        }).status(200).json({
-            message: 'Login successful'
+        res.status(200).json({
+            message: 'Login successful',
+            token: userToken,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: "student"
+            }
         });
 
     } catch (error) {
 
         res.status(500).json({
-            message: 'Internal Server error',
+            message: `Internal Server error${error.message ? ': ' + error.message : ''}`,
             error: error.message
         });
 
@@ -227,15 +233,15 @@ exports.wardenLogin = async (req, res) => {
 
         );
 
-        res.cookie('wardenToken', wardenToken, {
-
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 24 * 60 * 60 * 1000
-
-        }).status(200).json({
-            message: 'Login successful'
+        res.status(200).json({
+            message: 'Login successful',
+            token: wardenToken,
+            user: {
+                id: warden.id,
+                name: warden.name,
+                email: warden.email,
+                role: "warden"
+            }
         });
 
     } catch (error) {
@@ -311,17 +317,16 @@ exports.adminLogin = async (req, res) => {
 
         );
 
-        res.cookie('adminToken', adminToken, {
-
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 24 * 60 * 60 * 1000
-
-        }).status(200).json({
-            message: 'Admin login successful'
+        res.status(200).json({
+            message: 'Admin login successful',
+            token: adminToken,
+            user: {
+                id: "admin",
+                name: "Admin",
+                email: email,
+                role: "admin"
+            }
         });
-
     }
     catch (error) {
 

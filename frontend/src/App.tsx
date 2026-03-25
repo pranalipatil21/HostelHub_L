@@ -28,9 +28,6 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import ManageStudents from "./pages/admin/ManageStudents";
 import UploadCGPA from "./pages/admin/UploadCGPA";
 
-// Maintenance pages
-import MaintenanceDashboard from "./pages/maintenance/MaintenanceDashboard";
-
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
@@ -69,11 +66,6 @@ function AppRoutes() {
       <Route path="/admin/rooms" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/users" element={<ProtectedRoute allowedRoles={["admin"]}><ManageStudents /></ProtectedRoute>} />
       <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
-
-      {/* Maintenance */}
-      <Route path="/maintenance" element={<ProtectedRoute allowedRoles={["maintenance"]}><MaintenanceDashboard /></ProtectedRoute>} />
-      <Route path="/maintenance/update" element={<ProtectedRoute allowedRoles={["maintenance"]}><MaintenanceDashboard /></ProtectedRoute>} />
-      <Route path="/maintenance/profile" element={<ProtectedRoute allowedRoles={["maintenance"]}><MaintenanceDashboard /></ProtectedRoute>} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>

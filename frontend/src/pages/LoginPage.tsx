@@ -4,7 +4,7 @@ import { useAuth, UserRole } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building2, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, ArrowRight } from "lucide-react";
 
 const roles: { value: UserRole; label: string; desc: string }[] = [
   { value: "student", label: "Student", desc: "Resident student" },
@@ -19,22 +19,27 @@ const roleRoutes: Record<UserRole, string> = {
 };
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("arjun@hostel.edu");
-  const [password, setPassword] = useState("password");
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("student");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
+
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      login(email, password, role);
+
+    try {
+      await login(identifier, password, role);
       navigate(roleRoutes[role]);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
       setLoading(false);
-    }, 600);
+    }
   };
 
   return (
@@ -54,14 +59,19 @@ export default function LoginPage() {
             <span className="font-bold text-xl text-foreground">HostelHub</span>
           </Link>
           <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
-          <p className="text-muted-foreground text-sm mt-1">Sign in to your hostel management portal</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            Sign in to your hostel management portal
+          </p>
         </div>
 
         <div className="card-elevated rounded-2xl p-8 shadow-card">
           <form onSubmit={handleLogin} className="space-y-5">
+
             {/* Role selector */}
             <div>
-              <Label className="text-sm font-medium text-foreground mb-3 block">Select Role</Label>
+              <Label className="text-sm font-medium text-foreground mb-3 block">
+                Select Role
+              </Label>
               <div className="grid grid-cols-2 gap-2">
                 {roles.map((r) => (
                   <button
@@ -81,15 +91,15 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Email */}
+            {/* Email / PRN */}
             <div>
-              <Label htmlFor="email" className="text-sm text-foreground mb-1.5 block">Email address</Label>
+              <Label className="text-sm text-foreground mb-1.5 block">
+                Email or PRN
+              </Label>
               <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@hostel.edu"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="Enter email or PRN"
                 required
                 className="bg-input border-border focus:border-primary focus:ring-primary/20 text-foreground placeholder:text-muted-foreground"
               />
@@ -98,9 +108,17 @@ export default function LoginPage() {
             {/* Password */}
             <div>
               <div className="flex justify-between mb-1.5">
-                <Label htmlFor="password" className="text-sm text-foreground">Password</Label>
-                <button type="button" className="text-xs text-primary hover:underline">Forgot password?</button>
+                <Label htmlFor="password" className="text-sm text-foreground">
+                  Password
+                </Label>
+                <button
+                  type="button"
+                  className="text-xs text-primary hover:underline"
+                >
+                  Forgot password?
+                </button>
               </div>
+
               <div className="relative">
                 <Input
                   id="password"
@@ -116,11 +134,16 @@ export default function LoginPage() {
                   onClick={() => setShowPass(!showPass)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPass ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             </div>
 
+            {/* Submit */}
             <Button
               type="submit"
               disabled={loading}
@@ -139,28 +162,13 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
-
-          <div className="mt-6 p-4 rounded-xl bg-muted/30 border border-border">
-            <p className="text-xs text-muted-foreground text-center font-medium mb-2">Demo credentials (any password)</p>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              {roles.map((r) => (
-                <button
-                  key={r.value}
-                  type="button"
-                  onClick={() => setRole(r.value)}
-                  className="text-left px-2 py-1.5 rounded-lg hover:bg-muted transition-colors"
-                >
-                  <span className="text-primary font-medium">{r.label}:</span>
-                  <span className="text-muted-foreground ml-1 truncate block">{r.value}@hostel.edu</span>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         <p className="text-center mt-6 text-sm text-muted-foreground">
           Back to{" "}
-          <Link to="/" className="text-primary hover:underline font-medium">homepage</Link>
+          <Link to="/" className="text-primary hover:underline font-medium">
+            homepage
+          </Link>
         </p>
       </div>
     </div>
