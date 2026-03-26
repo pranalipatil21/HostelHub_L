@@ -21,6 +21,7 @@ import EditProfile from "./pages/student/EditProfile";
 
 // Warden pages
 import WardenDashboard from "./pages/warden/WardenDashboard";
+import WardenStudentMovement from "./pages/warden/WardenStudentMovement";
 import LeaveApproval from "./pages/warden/LeaveApproval";
 import WardenComplaints from "./pages/warden/WardenComplaints";
 
@@ -55,10 +56,10 @@ function AppRoutes() {
       <Route path="/student/profile/edit" element={<ProtectedRoute allowedRoles={["student"]}><EditProfile /></ProtectedRoute>} />
       {/* Warden */}
       <Route path="/warden" element={<ProtectedRoute allowedRoles={["warden"]}><WardenDashboard /></ProtectedRoute>} />
-      <Route path="/warden/movement" element={<ProtectedRoute allowedRoles={["warden"]}><WardenDashboard /></ProtectedRoute>} />
+      <Route path="/warden/movement" element={<ProtectedRoute allowedRoles={["warden"]}><WardenStudentMovement /></ProtectedRoute>} />
       <Route path="/warden/leave" element={<ProtectedRoute allowedRoles={["warden"]}><LeaveApproval /></ProtectedRoute>} />
       <Route path="/warden/complaints" element={<ProtectedRoute allowedRoles={["warden"]}><WardenComplaints /></ProtectedRoute>} />
-      <Route path="/warden/reports" element={<ProtectedRoute allowedRoles={["warden"]}><WardenDashboard /></ProtectedRoute>} />
+      {/* <Route path="/warden/reports" element={<ProtectedRoute allowedRoles={["warden"]}><WardenDashboard /></ProtectedRoute>} /> */}
 
       {/* Admin */}
       <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />

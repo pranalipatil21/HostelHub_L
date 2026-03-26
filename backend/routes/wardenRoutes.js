@@ -15,27 +15,21 @@ router.put("/profile", verifyWarden, wardenController.updateProfile);
 
 
 // ================= COMPLAINTS =================
-
-// get all complaints
 router.get("/complaints", verifyWarden, wardenController.getAllComplaints);
-
-// complaint details
 router.get("/complaints/:id", verifyWarden, wardenController.getComplaintById);
-
-// update complaint status
 router.put("/complaints/:id", verifyWarden, wardenController.updateComplaintStatus);
 
 
 // ================= LEAVE =================
-
-// get leave applications
 router.get("/leave", verifyWarden, wardenController.getAllLeaveApplications);
-
-// leave details
 router.get("/leave/:id", verifyWarden, wardenController.getLeaveApplicationById);
-
-// approve/reject leave
 router.put("/leave/:id", verifyWarden, wardenController.updateLeaveApplicationStatus);
+
+// ================= DASHBOARD =================
+router.get("/dashboard", verifyWarden, wardenController.getDashboardStats);
+
+// ================= MOVEMENT =================
+router.get("/movement", verifyWarden, wardenController.getStudentMovement);
 
 
 module.exports = router;

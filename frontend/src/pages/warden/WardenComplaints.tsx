@@ -1,62 +1,126 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wrench, AlertCircle } from "lucide-react";
+import { Wrench } from "lucide-react";
+import API from "@/api";
 
 const staff = ["Raj Singh", "Mohan Das", "Suresh Kumar", "Amit Verma"];
 
-const initialComplaints = [
-  { id: "C001", student: "Arjun Sharma", room: "A-204", category: "Electrical", desc: "Light not working in room", status: "Open", assignedStaff: "" },
-  { id: "C002", student: "Priya Kumar", room: "B-302", category: "Water", desc: "Tap leakage in bathroom", status: "In Progress", assignedStaff: "Raj Singh" },
-  { id: "C003", student: "Rahul Mehta", room: "A-103", category: "Internet", desc: "WiFi keeps disconnecting", status: "Open", assignedStaff: "" },
-  { id: "C004", student: "Sneha Reddy", room: "C-201", category: "Cleaning", desc: "Common area not cleaned", status: "In Progress", assignedStaff: "Mohan Das" },
-  { id: "C005", student: "Kiran Patel", room: "A-302", category: "Electrical", desc: "Power outlet not working", status: "Resolved", assignedStaff: "Suresh Kumar" },
-];
-
-const statusClass: Record<string, string> = {
-  Open: "status-badge-open",
-  "In Progress": "status-badge-inprogress",
-  Resolved: "status-badge-resolved",
+// ✅ CLEAN STATUS BADGES
+const getStatusClass = (status: string) => {
+  switch (status) {
+    case "Open":
+      return "px-3 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20";
+    case "In Progress":
+      return "px-3 py-1 rounded-full text-xs font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20";
+    case "Resolved":
+      return "px-3 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20";
+    default:
+      return "px-3 py-1 rounded-full text-xs font-medium bg-gray-500/10 text-gray-400";
+  }
 };
 
-const catColor: Record<string, string> = {
-  Electrical: "text-yellow-400",
-  Water: "text-blue-400",
-  Internet: "text-purple-400",
-  Cleaning: "text-green-400",
-  Other: "text-muted-foreground",
+// ✅ CATEGORY COLORS
+const getCategoryColor = (category: string) => {
+  switch (category) {
+    case "Electrical":
+      return "text-yellow-400";
+    case "Water":
+      return "text-blue-400";
+    case "Internet":
+      return "text-purple-400";
+    case "Cleaning":
+      return "text-green-400";
+    default:
+      return "text-muted-foreground";
+  }
 };
 
 export default function WardenComplaints() {
-  const [complaints, setComplaints] = useState(initialComplaints);
+  const [complaints, setComplaints] = useState([]);
 
-  const assignStaff = (id: string, staffMember: string) => {
-    setComplaints((prev) => prev.map((c) => c.id === id ? { ...c, assignedStaff: staffMember, status: "In Progress" } : c));
+  useEffect(() => {
+    fetchComplaints();
+  }, []);
+
+  const fetchComplaints = async () => {
+    const res = await API.get("/warden/complaints");
+
+    const formatted = res.data.map((c: any) => ({
+      id: c.id,
+      student: c.Student?.name,
+      room: c.Student?.room || "N/A",
+      category: c.category,
+      desc: c.description,
+      status: c.status,
+      assignedStaff: "",
+    }));
+
+    setComplaints(formatted);
   };
 
-  const updateStatus = (id: string, status: string) => {
-    setComplaints((prev) => prev.map((c) => c.id === id ? { ...c, status } : c));
+  const assignStaff = (id: number, staffMember: string) => {
+    setComplaints((prev: any) =>
+      prev.map((c: any) =>
+        c.id === id
+          ? { ...c, assignedStaff: staffMember, status: "In Progress" }
+          : c
+      )
+    );
+  };
+
+  const updateStatus = async (id: number, status: string) => {
+    await API.put(`/warden/complaints/${id}`, { status });
+    fetchComplaints();
   };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
+
+        {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Complaint Management</h1>
-          <p className="text-muted-foreground text-sm mt-1">Assign and track maintenance complaints</p>
+          <h1 className="text-2xl font-bold text-foreground">
+            Complaint Management
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Assign and track maintenance complaints
+          </p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: "Open", count: complaints.filter((c) => c.status === "Open").length, cls: "text-blue-400", border: "border-blue-500/20" },
-            { label: "In Progress", count: complaints.filter((c) => c.status === "In Progress").length, cls: "text-orange-400", border: "border-orange-500/20" },
-            { label: "Resolved", count: complaints.filter((c) => c.status === "Resolved").length, cls: "text-green-400", border: "border-green-500/20" },
+            {
+              label: "Open",
+              count: complaints.filter((c: any) => c.status === "Open").length,
+              cls: "text-blue-400",
+              border: "border-blue-500/20",
+            },
+            {
+              label: "In Progress",
+              count: complaints.filter((c: any) => c.status === "In Progress").length,
+              cls: "text-orange-400",
+              border: "border-orange-500/20",
+            },
+            {
+              label: "Resolved",
+              count: complaints.filter((c: any) => c.status === "Resolved").length,
+              cls: "text-green-400",
+              border: "border-green-500/20",
+            },
           ].map((s) => (
-            <div key={s.label} className={`card-elevated rounded-xl p-4 ${s.border}`}>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">{s.label}</p>
-              <p className={`text-3xl font-bold mt-1 ${s.cls}`}>{s.count}</p>
+            <div
+              key={s.label}
+              className={`card-elevated rounded-xl p-4 ${s.border}`}
+            >
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                {s.label}
+              </p>
+              <p className={`text-3xl font-bold mt-1 ${s.cls}`}>
+                {s.count}
+              </p>
             </div>
           ))}
         </div>
@@ -65,73 +129,107 @@ export default function WardenComplaints() {
         <div className="card-elevated rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-border flex items-center gap-2">
             <Wrench className="w-4 h-4 text-primary" />
-            <h3 className="font-semibold text-foreground">All Complaints</h3>
+            <h3 className="font-semibold text-foreground">
+              All Complaints
+            </h3>
           </div>
+
           <div className="overflow-x-auto">
             <table className="w-full">
+
+              {/* ✅ HEADER FIX */}
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  {["ID", "Student", "Category", "Description", "Status", "Assign Staff", "Actions"].map((h) => (
-                    <th key={h} className="text-left px-5 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">{h}</th>
+                  {["Student", "Category", "Description", "Status", "Assign", "Action"].map((h) => (
+                    <th
+                      key={h}
+                      className="text-left px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider"
+                    >
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
+
               <tbody>
-                {complaints.map((c) => (
-                  <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                    <td className="px-5 py-4 text-sm text-primary font-mono">{c.id}</td>
-                    <td className="px-5 py-4">
-                      <p className="text-sm font-medium text-foreground">{c.student}</p>
-                      <p className="text-xs text-muted-foreground">Room {c.room}</p>
-                    </td>
-                    <td className={`px-5 py-4 text-sm font-medium ${catColor[c.category]}`}>{c.category}</td>
-                    <td className="px-5 py-4 text-sm text-muted-foreground max-w-xs truncate">{c.desc}</td>
-                    <td className="px-5 py-4"><span className={statusClass[c.status]}>{c.status}</span></td>
-                    <td className="px-5 py-4">
-                      {c.status !== "Resolved" ? (
-                        <Select value={c.assignedStaff} onValueChange={(val) => assignStaff(c.id, val)}>
-                          <SelectTrigger className="bg-input border-border h-8 text-xs w-36 text-foreground">
+                {complaints.length > 0 ? (
+                  complaints.map((c: any) => (
+                    <tr
+                      key={c.id}
+                      className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors"
+                    >
+                      {/* Student */}
+                      <td className="px-6 py-4 text-sm font-medium text-foreground">
+                        {c.student}
+                      </td>
+
+                      {/* Category */}
+                      <td className={`px-6 py-4 text-sm font-medium ${getCategoryColor(c.category)}`}>
+                        {c.category}
+                      </td>
+
+                      {/* Description */}
+                      <td className="px-6 py-4 text-sm text-muted-foreground max-w-xs truncate">
+                        {c.desc}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-6 py-4">
+                        <span className={getStatusClass(c.status)}>
+                          {c.status}
+                        </span>
+                      </td>
+
+                      {/* Assign */}
+                      <td className="px-6 py-4">
+                        <Select onValueChange={(val) => assignStaff(c.id, val)}>
+                          <SelectTrigger className="h-8 text-xs w-36">
                             <SelectValue placeholder="Assign staff" />
                           </SelectTrigger>
-                          <SelectContent className="bg-card border-border">
+                          <SelectContent>
                             {staff.map((s) => (
-                              <SelectItem key={s} value={s} className="text-foreground text-xs hover:bg-muted focus:bg-muted">{s}</SelectItem>
+                              <SelectItem key={s} value={s}>
+                                {s}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">{c.assignedStaff}</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex gap-2">
-                        {c.status === "In Progress" && (
+                      </td>
+
+                      {/* Action */}
+                      <td className="px-6 py-4">
+                        {c.status === "In Progress" ? (
                           <Button
                             size="sm"
                             onClick={() => updateStatus(c.id, "Resolved")}
-                            className="bg-primary text-primary-foreground hover:bg-primary/90 h-7 px-2 text-xs"
                           >
                             Resolve
                           </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">
+                            —
+                          </span>
                         )}
-                        {c.status === "Open" && c.assignedStaff && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateStatus(c.id, "In Progress")}
-                            className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10 h-7 px-2 text-xs"
-                          >
-                            In Progress
-                          </Button>
-                        )}
-                      </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  // ✅ EMPTY STATE
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="px-6 py-10 text-center text-sm text-muted-foreground"
+                    >
+                      No complaints available 🛠️
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
+
             </table>
           </div>
         </div>
+
       </div>
     </DashboardLayout>
   );

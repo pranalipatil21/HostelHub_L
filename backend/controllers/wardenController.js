@@ -1,50 +1,36 @@
 const { Warden, Complaint, Leave, Student } = require('../models');
 
-
-// ================= PROFILE =================
+/* =====================================================
+                    PROFILE
+===================================================== */
 
 exports.getProfile = async (req, res) => {
-
     try {
-
         const warden = await Warden.findByPk(req.user.id, {
             attributes: { exclude: ["password"] }
         });
 
         if (!warden) {
-            return res.status(404).json({
-                message: "Warden not found"
-            });
+            return res.status(404).json({ message: "Warden not found" });
         }
 
         res.json(warden);
 
     } catch (error) {
-
-        res.status(500).json({
-            error: error.message
-        });
-
+        res.status(500).json({ error: error.message });
     }
-
 };
 
 
-
 exports.updateProfile = async (req, res) => {
-
     try {
-
         const warden = await Warden.findByPk(req.user.id);
 
         if (!warden) {
-            return res.status(404).json({
-                message: "Warden not found"
-            });
+            return res.status(404).json({ message: "Warden not found" });
         }
 
         const { password, ...data } = req.body;
-
         await warden.update(data);
 
         res.json({
@@ -53,26 +39,53 @@ exports.updateProfile = async (req, res) => {
         });
 
     } catch (error) {
-
-        res.status(500).json({
-            error: error.message
-        });
-
+        res.status(500).json({ error: error.message });
     }
-
 };
 
 
+/* =====================================================
+                    DASHBOARD (NEW)
+===================================================== */
+
+exports.getDashboardStats = async (req, res) => {
+    try {
+
+        const complaints = await Complaint.findAll();
+        const leaves = await Leave.findAll();
+
+        res.json({
+            totalComplaints: complaints.length,
+            openComplaints: complaints.filter(c => c.status === "Open").length,
+            inProgressComplaints: complaints.filter(c => c.status === "In Progress").length,
+            resolvedComplaints: complaints.filter(c => c.status === "Resolved").length,
+
+            totalLeaves: leaves.length,
+            pendingLeaves: leaves.filter(l => l.status === "Pending").length,
+            approvedLeaves: leaves.filter(l => l.status === "Approved").length,
+            rejectedLeaves: leaves.filter(l => l.status === "Rejected").length
+        });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 
 /* =====================================================
-                        COMPLAINTS
+                    COMPLAINTS
 ===================================================== */
 
 exports.getAllComplaints = async (req, res) => {
-
     try {
 
+        const { status } = req.query;
+
+        const where = {};
+        if (status) where.status = status;
+
         const complaints = await Complaint.findAll({
+            where,
             include: [{
                 model: Student,
                 attributes: ["id", "name", "PRN", "email"]
@@ -83,19 +96,12 @@ exports.getAllComplaints = async (req, res) => {
         res.json(complaints);
 
     } catch (error) {
-
-        res.status(500).json({
-            error: error.message
-        });
-
+        res.status(500).json({ error: error.message });
     }
-
 };
 
 
-
 exports.getComplaintById = async (req, res) => {
-
     try {
 
         const complaint = await Complaint.findByPk(req.params.id, {
@@ -106,58 +112,36 @@ exports.getComplaintById = async (req, res) => {
         });
 
         if (!complaint) {
-            return res.status(404).json({
-                message: "Complaint not found"
-            });
+            return res.status(404).json({ message: "Complaint not found" });
         }
 
         res.json(complaint);
 
     } catch (error) {
-
-        res.status(500).json({
-            error: error.message
-        });
-
+        res.status(500).json({ error: error.message });
     }
-
 };
 
 
-
 exports.updateComplaintStatus = async (req, res) => {
-
     try {
 
         const { status } = req.body;
 
-        const allowedStatuses = [
-            "Open",
-            "In Progress",
-            "Resolved"
-        ];
+        const allowedStatuses = ["Open", "In Progress", "Resolved"];
 
         if (!allowedStatuses.includes(status)) {
-            return res.status(400).json({
-                message: "Invalid status"
-            });
+            return res.status(400).json({ message: "Invalid status" });
         }
 
         const complaint = await Complaint.findByPk(req.params.id);
 
         if (!complaint) {
-            return res.status(404).json({
-                message: "Complaint not found"
-            });
+            return res.status(404).json({ message: "Complaint not found" });
         }
 
         complaint.status = status;
-
-        if (status === "Resolved") {
-            complaint.resolvedAt = new Date();
-        } else {
-            complaint.resolvedAt = null;
-        }
+        complaint.resolvedAt = status === "Resolved" ? new Date() : null;
 
         await complaint.save();
 
@@ -167,26 +151,25 @@ exports.updateComplaintStatus = async (req, res) => {
         });
 
     } catch (error) {
-
-        res.status(500).json({
-            message: error.message
-        });
-
+        res.status(500).json({ message: error.message });
     }
-
 };
 
 
-
 /* =====================================================
-                            LEAVE
+                        LEAVE
 ===================================================== */
 
 exports.getAllLeaveApplications = async (req, res) => {
-
     try {
 
+        const { status } = req.query;
+
+        const where = {};
+        if (status) where.status = status;
+
         const leaves = await Leave.findAll({
+            where,
             include: [{
                 model: Student,
                 attributes: ["id", "name", "PRN", "email"]
@@ -197,19 +180,12 @@ exports.getAllLeaveApplications = async (req, res) => {
         res.json(leaves);
 
     } catch (error) {
-
-        res.status(500).json({
-            error: error.message
-        });
-
+        res.status(500).json({ error: error.message });
     }
-
 };
 
 
-
 exports.getLeaveApplicationById = async (req, res) => {
-
     try {
 
         const leave = await Leave.findByPk(req.params.id, {
@@ -220,54 +196,37 @@ exports.getLeaveApplicationById = async (req, res) => {
         });
 
         if (!leave) {
-            return res.status(404).json({
-                message: "Leave not found"
-            });
+            return res.status(404).json({ message: "Leave not found" });
         }
 
         res.json(leave);
 
     } catch (error) {
-
-        res.status(500).json({
-            error: error.message
-        });
-
+        res.status(500).json({ error: error.message });
     }
-
 };
 
 
-
 exports.updateLeaveApplicationStatus = async (req, res) => {
-
     try {
 
         const { status } = req.body;
 
-        const allowedStatuses = [
-            "Pending",
-            "Approved",
-            "Rejected"
-        ];
+        const allowedStatuses = ["Pending", "Approved", "Rejected"];
 
         if (!allowedStatuses.includes(status)) {
-            return res.status(400).json({
-                message: "Invalid leave status"
-            });
+            return res.status(400).json({ message: "Invalid leave status" });
         }
 
         const leave = await Leave.findByPk(req.params.id);
 
         if (!leave) {
-            return res.status(404).json({
-                message: "Leave not found"
-            });
+            return res.status(404).json({ message: "Leave not found" });
         }
 
         leave.status = status;
         leave.decisionAt = new Date();
-        leave.WardenId = req.warden.id;
+        leave.WardenId = req.user.id; // FIXED
 
         await leave.save();
 
@@ -277,11 +236,39 @@ exports.updateLeaveApplicationStatus = async (req, res) => {
         });
 
     } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
 
-        res.status(500).json({
-            error: error.message
+
+/* =====================================================
+                STUDENT MOVEMENT (NEW)
+===================================================== */
+
+exports.getStudentMovement = async (req, res) => {
+    try {
+
+        // NOTE: Replace with actual Movement model if exists
+        // Temporary: using approved leaves as movement
+
+        const leaves = await Leave.findAll({
+            where: { status: "Approved" },
+            include: [{
+                model: Student,
+                attributes: ["id", "name", "PRN"]
+            }]
         });
 
-    }
+        const movement = leaves.map(l => ({
+            student: l.Student.name,
+            startDate: l.startDate,
+            endDate: l.endDate,
+            status: "On Leave"
+        }));
 
+        res.json(movement);
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 };

@@ -1,120 +1,183 @@
+import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import StatsCard from "@/components/StatsCard";
 import { Users, FileText, MessageSquare, CheckCircle, ArrowUpRight } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-
-const weekData = [
-  { day: "Mon", students: 12 },
-  { day: "Tue", students: 8 },
-  { day: "Wed", students: 15 },
-  { day: "Thu", students: 20 },
-  { day: "Fri", students: 25 },
-  { day: "Sat", students: 18 },
-  { day: "Sun", students: 10 },
-];
-
-const recentLeaves = [
-  { name: "Priya K.", room: "A-201", status: "Pending", dates: "Dec 24–26" },
-  { name: "Rahul M.", room: "B-302", status: "Pending", dates: "Dec 25–27" },
-  { name: "Sneha R.", room: "A-104", status: "Approved", dates: "Dec 22–24" },
-  { name: "Arjun S.", room: "A-204", status: "Approved", dates: "Dec 20–22" },
-];
-
-const statusClass: Record<string, string> = {
-  Pending: "status-badge-pending",
-  Approved: "status-badge-approved",
-  Rejected: "status-badge-rejected",
-};
+import API from "@/api";
 
 export default function WardenDashboard() {
+  const [stats, setStats] = useState<any>({});
+  const [leaves, setLeaves] = useState([]);
+  const [movement, setMovement] = useState([]);
+  const [weekData, setWeekData] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const fetchData = async () => {
+    try {
+      const [statsRes, leavesRes, movementRes] = await Promise.all([
+        API.get("/warden/dashboard"),
+        API.get("/warden/leave"),
+        API.get("/warden/movement"),
+      ]);
+
+      setStats(statsRes.data);
+      setLeaves(leavesRes.data.slice(0, 4));
+      setMovement(movementRes.data);
+
+      // ✅ REAL DATA FOR GRAPH (based on movement)
+      const daysMap: any = {
+        Sun: 0, Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0
+      };
+
+      movementRes.data.forEach((m: any) => {
+        const day = new Date(m.startDate).toLocaleDateString("en-US", { weekday: "short" });
+        daysMap[day] += 1;
+      });
+
+      const chartData = Object.keys(daysMap).map((day) => ({
+        day,
+        students: daysMap[day],
+      }));
+
+      setWeekData(chartData);
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // ✅ BETTER STATUS STYLING
+  const getStatusClass = (status: string) => {
+    switch (status) {
+      case "Approved":
+        return "px-3 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20";
+      case "Rejected":
+        return "px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20";
+      case "Pending":
+        return "px-3 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-400 border border-yellow-500/20";
+      default:
+        return "px-3 py-1 rounded-full text-xs font-medium bg-gray-500/10 text-gray-400";
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
+
+        {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-foreground">Warden Dashboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">Monitor all hostel activities and student movement</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            Monitor all hostel activities and student movement
+          </p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard title="Students Outside" value="24" subtitle="Of 280 total" icon={<Users className="w-5 h-5" />} accentColor="orange" trend={{ value: 8, label: "vs yesterday" }} />
-          <StatsCard title="Pending Leaves" value="12" subtitle="Awaiting approval" icon={<FileText className="w-5 h-5" />} accentColor="primary" />
-          <StatsCard title="Active Complaints" value="8" subtitle="3 critical" icon={<MessageSquare className="w-5 h-5" />} accentColor="red" />
-          <StatsCard title="Resolved Today" value="5" subtitle="Complaints & leaves" icon={<CheckCircle className="w-5 h-5" />} accentColor="green" trend={{ value: 25, label: "vs yesterday" }} />
+          <StatsCard title="Students Outside" value={movement.length} icon={<Users />} accentColor="orange" />
+          <StatsCard title="Pending Leaves" value={stats.pendingLeaves || 0} icon={<FileText />} accentColor="primary" />
+          <StatsCard title="Active Complaints" value={stats.openComplaints || 0} icon={<MessageSquare />} accentColor="red" />
+          <StatsCard title="Resolved Today" value={stats.resolvedComplaints || 0} icon={<CheckCircle />} accentColor="green" />
         </div>
 
-        {/* Chart + Recent leaves */}
+        {/* Chart + Recent Leaves */}
         <div className="grid lg:grid-cols-3 gap-6">
+
+          {/* Chart */}
           <div className="lg:col-span-2 card-elevated rounded-xl p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="font-semibold text-foreground">Students Outside This Week</h3>
-                <p className="text-xs text-muted-foreground">Daily count</p>
-              </div>
-            </div>
+            <h3 className="font-semibold text-foreground mb-4">
+              Students Outside This Week
+            </h3>
+
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={weekData}>
-                <XAxis dataKey="day" tick={{ fill: "hsl(0,0%,55%)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "hsl(0,0%,55%)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ background: "hsl(0,0%,10%)", border: "1px solid hsl(0,0%,18%)", borderRadius: "8px", color: "hsl(0,0%,95%)" }} />
-                <Bar dataKey="students" fill="hsl(48,96%,53%)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                <XAxis dataKey="day" />
+                <YAxis />
+                <Tooltip />
+                {/* ✅ COLOR FIX */}
+                <Bar dataKey="students" fill="#facc15" radius={[4,4,0,0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
+          {/* Recent Leaves */}
           <div className="card-elevated rounded-xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-foreground">Recent Leave Requests</h3>
-              <button className="text-xs text-primary hover:underline flex items-center gap-1">All <ArrowUpRight className="w-3 h-3" /></button>
+            <div className="flex justify-between mb-4">
+              <h3 className="font-semibold">Recent Leave Requests</h3>
+              <span className="text-xs text-primary flex items-center gap-1">
+                All <ArrowUpRight className="w-3 h-3" />
+              </span>
             </div>
+
             <div className="space-y-3">
-              {recentLeaves.map((l, i) => (
-                <div key={i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+              {leaves.map((l: any, i) => (
+                <div key={i} className="flex justify-between items-center">
                   <div>
-                    <p className="text-sm font-medium text-foreground">{l.name}</p>
-                    <p className="text-xs text-muted-foreground">Room {l.room} · {l.dates}</p>
+                    <p className="text-sm font-medium">{l.Student?.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(l.startDate)} → {formatDate(l.endDate)}
+                    </p>
                   </div>
-                  <span className={statusClass[l.status]}>{l.status}</span>
+                  <span className={getStatusClass(l.status)}>
+                    {l.status}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
+
         </div>
 
-        {/* Student movement table */}
+        {/* Movement Table */}
         <div className="card-elevated rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-            <h3 className="font-semibold text-foreground">Currently Outside</h3>
-            <span className="px-2.5 py-1 rounded-full bg-orange-500/15 text-orange-400 text-xs font-medium border border-orange-500/30">24 students</span>
+          <div className="px-6 py-4 border-b flex justify-between">
+            <h3 className="font-semibold">Currently Outside</h3>
+            <span className="status-badge-inprogress">
+              {movement.length} students
+            </span>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  {["Student", "Room", "Checked Out", "Expected Return", "Status"].map((h) => (
-                    <th key={h} className="text-left px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { name: "Arjun Sharma", room: "A-204", out: "09:00 AM", ret: "08:00 PM", status: "On Leave" },
-                  { name: "Rahul Mehta", room: "B-302", out: "11:30 AM", ret: "10:00 PM", status: "Day Out" },
-                  { name: "Kavya Patel", room: "A-103", out: "08:00 AM", ret: "06:00 PM", status: "Day Out" },
-                  { name: "Aditya Kumar", room: "C-201", out: "02:00 PM", ret: "11:00 PM", status: "Day Out" },
-                ].map((s, i) => (
-                  <tr key={i} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-foreground">{s.name}</td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground">{s.room}</td>
-                    <td className="px-6 py-4 text-sm text-orange-400">{s.out}</td>
-                    <td className="px-6 py-4 text-sm text-foreground">{s.ret}</td>
-                    <td className="px-6 py-4"><span className="status-badge-inprogress">{s.status}</span></td>
-                  </tr>
+
+          <table className="w-full">
+            <thead>
+              <tr>
+                {["Student","Start","End","Status"].map(h => (
+                  <th key={h} className="px-6 py-3 text-left">{h}</th>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </tr>
+            </thead>
+
+            <tbody>
+              {movement.map((m: any, i) => (
+                <tr key={i}>
+                  <td className="px-6 py-4">{m.student}</td>
+
+                  {/* ✅ DATE FIX */}
+                  <td className="px-6 py-4">{formatDate(m.startDate)}</td>
+                  <td className="px-6 py-4">{formatDate(m.endDate)}</td>
+
+                  {/* ✅ BETTER STATUS */}
+                  <td className="px-6 py-4">
+                    <span className="px-3 py-1 rounded-full text-xs bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                      {m.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+
       </div>
     </DashboardLayout>
   );
