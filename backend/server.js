@@ -46,16 +46,31 @@ app.use('/api/warden', wardenRoutes);
 // Database Connection + Server Start
 const PORT = process.env.PORT || 5000;
 
-sequelize.sync( { alter: true } )
-.then(() => {
+// sequelize.sync( { alter: true } )
+// .then(() => {
 
+//     console.log("Database connected successfully");
+
+//     app.listen(PORT, () => {
+//         console.log(`Server running on port ${PORT}`);
+//     });
+
+// })
+// .catch((err) => {
+//     console.error("Database connection failed:", err);
+// });
+
+sequelize.authenticate()
+.then(() => {
     console.log("Database connected successfully");
 
+    return sequelize.sync(); // no alter
+})
+.then(() => {
     app.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
     });
-
 })
 .catch((err) => {
-    console.error("Database connection failed:", err);
+    console.error("DB ERROR:", err);
 });
