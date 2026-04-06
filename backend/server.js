@@ -22,10 +22,14 @@ const app = express();
 
 // Middleware
 app.use(cors({
-    origin: '*',
+    origin: [
+        "http://localhost:5173",
+        "https://pccoehostelhub.vercel.app"
+    ],
     credentials: true
 }));
 
+app.options("*", cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
