@@ -42,7 +42,7 @@ app.use('/api/warden', wardenRoutes);
 // Database Connection + Server Start
 const PORT = process.env.PORT || 5000;
 
-sequelize.sync()
+sequelize.sync( { alter: true } )
 .then(() => {
 
     console.log("Database connected successfully");
