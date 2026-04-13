@@ -46,7 +46,7 @@ export default function RoomVisualizer() {
     try {
       setLoading(true);
 
-      await API.post("/admin/students/change-room", {   // ✅ FIXED
+      await API.post("/admin/students/change-room", {   //  FIXED
         PRN: selectedStudent,
         roomId: room.id
       });
@@ -66,7 +66,7 @@ export default function RoomVisualizer() {
     try {
       setLoading(true);
 
-      await API.post("/admin/remove-student-room", {   // ✅ USE NEW API
+      await API.post("/admin/remove-student-room", {   //  USE NEW API
         studentId
       });
 

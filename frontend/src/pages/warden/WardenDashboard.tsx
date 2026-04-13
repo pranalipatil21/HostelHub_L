@@ -183,7 +183,7 @@ export default function WardenDashboard() {
               ) : (
                 <tr>
                   <td colSpan={3} className="text-center py-10 text-muted-foreground">
-                    No students currently outside 🚫
+                    No students currently outside 
                   </td>
                 </tr>
               )}

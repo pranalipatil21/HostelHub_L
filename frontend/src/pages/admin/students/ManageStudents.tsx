@@ -19,7 +19,7 @@ export default function ManageStudents() {
     fetchStudents();
   }, []);
 
-  // ✅ FETCH
+  //  FETCH
   const fetchStudents = async () => {
     try {
       setLoading(true);
@@ -32,21 +32,21 @@ export default function ManageStudents() {
     }
   };
 
-  // ✅ DELETE
+  //  DELETE
   const handleDelete = async (id: number) => {
     const confirmDelete = confirm("Are you sure you want to delete this student?");
     if (!confirmDelete) return;
 
     try {
       await API.delete(`/admin/students/${id}`);
-      setMessage("Student deleted successfully ✅");
+      setMessage("Student deleted successfully ");
       fetchStudents();
     } catch (err) {
       console.error(err);
     }
   };
 
-  // ✅ AUTO CLEAR MESSAGE
+  //  AUTO CLEAR MESSAGE
   useEffect(() => {
     if (message) {
       const timer = setTimeout(() => setMessage(""), 3000);
@@ -64,7 +64,7 @@ export default function ManageStudents() {
     status: "Active"
   }));
 
-  // ✅ FILTER SAFE
+  //  FILTER SAFE
   const filtered = mappedStudents.filter((s) =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
     s.roll.toLowerCase().includes(search.toLowerCase()) ||
