@@ -24,7 +24,7 @@ export default function AllocationHub() {
   const [tab, setTab] = useState("upload");
   const [loading, setLoading] = useState(false);
 
-  // ✅ FIXED YEAR OPTIONS (MANUAL)
+  //  FIXED YEAR OPTIONS (MANUAL)
   const yearOptions = [
     "2025-26",
     "2026-27",
@@ -35,7 +35,7 @@ export default function AllocationHub() {
 
   const [newYear, setNewYear] = useState(yearOptions[0]);
 
-  // ✅ INPUT STATES
+  //  INPUT STATES
   const [floors, setFloors] = useState("");
   const [roomsPerFloor, setRoomsPerFloor] = useState("");
   const [roomCapacity, setRoomCapacity] = useState("3");
@@ -63,7 +63,7 @@ export default function AllocationHub() {
   const createCycle = async () => {
     try {
 
-      // ✅ VALIDATION
+      //  VALIDATION
       if (!floors || !roomsPerFloor) {
         alert("Please fill all required fields");
         return;
@@ -82,7 +82,7 @@ export default function AllocationHub() {
       await refreshCycles();
       alert("Cycle created successfully");
 
-      // ✅ RESET INPUTS
+      //  RESET INPUTS
       setFloors("");
       setRoomsPerFloor("");
       setRoomCapacity("3");

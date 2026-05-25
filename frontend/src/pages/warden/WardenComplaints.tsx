@@ -7,7 +7,7 @@ import API from "@/api";
 
 const staff = ["Raj Singh", "Mohan Das", "Suresh Kumar", "Amit Verma"];
 
-// ✅ CLEAN STATUS BADGES
+//  CLEAN STATUS BADGES
 const getStatusClass = (status: string) => {
   switch (status) {
     case "Open":
@@ -21,7 +21,7 @@ const getStatusClass = (status: string) => {
   }
 };
 
-// ✅ CATEGORY COLORS
+//  CATEGORY COLORS
 const getCategoryColor = (category: string) => {
   switch (category) {
     case "Electrical":
@@ -137,7 +137,7 @@ export default function WardenComplaints() {
           <div className="overflow-x-auto">
             <table className="w-full">
 
-              {/* ✅ HEADER FIX */}
+              {/*  HEADER FIX */}
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   {["Student", "Category", "Description", "Status", "Assign", "Action"].map((h) => (
@@ -214,7 +214,7 @@ export default function WardenComplaints() {
                     </tr>
                   ))
                 ) : (
-                  // ✅ EMPTY STATE
+                  //  EMPTY STATE
                   <tr>
                     <td
                       colSpan={6}

@@ -5,12 +5,8 @@ const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 
 
-// =========================
 // STUDENT REGISTER
-// =========================
-
 exports.userRegister = async (req, res) => {
-
     const transaction = await sequelize.transaction();
 
     try {
@@ -81,7 +77,6 @@ exports.userRegister = async (req, res) => {
     } catch (error) {
 
         await transaction.rollback();
-
         res.status(500).json({
             message: 'Server error',
             error: error.message

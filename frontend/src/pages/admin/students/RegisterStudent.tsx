@@ -15,11 +15,30 @@ export default function RegisterStudent() {
 
   const handleSubmit = async () => {
     try {
-      await API.post("/auth/register", form);
+      await API.post("/auth/register", {
+        ...form,
+        roomNumber: formatRoom(form.roomNumber)
+      });
+      console.log(form);
       alert("Student Registered");
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const formatRoom = (input) => {
+    if (!input) return "";
+  
+    if (input.includes("-")) return input;
+  
+    if (input.length < 3) {
+      throw new Error("Invalid room format");
+    }
+  
+    const floor = input[0];
+    const room = input.slice(1);
+  
+    return `${floor}-${room.padStart(3, "0")}`;
   };
 
   return (

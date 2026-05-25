@@ -10,6 +10,8 @@ const RoomSelection = require('./RoomSelection');
 const Movement = require('./Movement');
 const Leave = require('./Leave');
 const Complaint = require('./Complaint');
+const Analytics = require('./Analytics');
+
 
 
 // ROOM RELATIONS
@@ -65,6 +67,19 @@ Student.hasMany(Complaint);
 Complaint.belongsTo(Student);
 
 
+//deletion 
+Student.hasMany(Movement, { onDelete: "CASCADE" });
+Movement.belongsTo(Student);
+
+Student.hasMany(Leave, { onDelete: "CASCADE" });
+Leave.belongsTo(Student);
+
+Student.hasMany(Complaint, { onDelete: "CASCADE" });
+Complaint.belongsTo(Student);
+
+Student.hasMany(StudentAllocation, { onDelete: "CASCADE" });
+StudentAllocation.belongsTo(Student);
+
 module.exports = {
     sequelize,
     Student,
@@ -76,5 +91,6 @@ module.exports = {
     RoomSelection,
     Movement,
     Leave,
-    Complaint
+    Complaint,
+    Analytics
 };

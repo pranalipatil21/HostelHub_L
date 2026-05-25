@@ -18,7 +18,7 @@ export default function WardenStudentMovement() {
     }
   };
 
-  // ✅ HUMAN READABLE DATE
+  // ✅ Format Date
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString("en-IN", {
       day: "numeric",
@@ -27,39 +27,71 @@ export default function WardenStudentMovement() {
     });
   };
 
-  // ✅ BETTER STATUS BADGE
+  // ✅ Status Label
+  const getReadableStatus = (status: string) =>
+    status === "OUT" ? "On Leave" : "Returned";
+
+  // ✅ Status Styling
   const getStatusClass = (status: string) => {
-    switch (status) {
-      case "On Leave":
-        return "px-3 py-1 rounded-full text-xs font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20";
-      case "Returned":
-        return "px-3 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20";
-      default:
-        return "px-3 py-1 rounded-full text-xs font-medium bg-gray-500/10 text-gray-400";
-    }
+    return status === "OUT"
+      ? "bg-orange-500/10 text-orange-400 border-orange-500/20"
+      : "bg-green-500/10 text-green-400 border-green-500/20";
   };
+
+  // ✅ SORT: OUT first, then IN
+  const sortedMovement = [...movement].sort((a: any, b: any) => {
+    if (a.status === "OUT" && b.status !== "OUT") return -1;
+    if (a.status !== "OUT" && b.status === "OUT") return 1;
+    return 0;
+  });
+
+  // ✅ COUNT ONLY OUT STUDENTS
+  const outsideCount = movement.filter((m: any) => m.status === "OUT").length;
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
 
-        {/* Header */}
+        {/* 🔥 HEADER */}
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Student Movement</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            Student Movement
+          </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Track students currently outside hostel
+            Monitor all student movement (Outside & Returned)
           </p>
         </div>
 
-        {/* Table Card */}
-        <div className="card-elevated rounded-xl overflow-hidden">
-          
-          {/* Top Bar */}
-          <div className="px-6 py-4 border-b border-border flex justify-between items-center">
-            <h3 className="font-semibold text-foreground">Currently Outside</h3>
+        {/* 🔥 STATS */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="card-elevated p-4 rounded-xl">
+            <p className="text-sm text-muted-foreground">
+              Currently Outside
+            </p>
+            <h2 className="text-2xl font-bold text-orange-400">
+              {outsideCount}
+            </h2>
+          </div>
 
-            <span className="px-3 py-1 rounded-full text-xs bg-orange-500/10 text-orange-400 border border-orange-500/20">
-              {movement.length} students
+          <div className="card-elevated p-4 rounded-xl">
+            <p className="text-sm text-muted-foreground">
+              Total Movement Logs
+            </p>
+            <h2 className="text-2xl font-bold text-foreground">
+              {movement.length}
+            </h2>
+          </div>
+        </div>
+
+        {/* 🔥 TABLE */}
+        <div className="card-elevated rounded-xl overflow-hidden">
+
+          {/* Top Bar */}
+          <div className="px-6 py-4 border-b flex justify-between items-center">
+            <h3 className="font-semibold">All Movement Logs</h3>
+
+            <span className="text-xs px-3 py-1 rounded-full bg-muted text-muted-foreground">
+              {movement.length} records
             </span>
           </div>
 
@@ -68,11 +100,11 @@ export default function WardenStudentMovement() {
             <table className="w-full">
 
               <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  {["Student", "Start", "End", "Status"].map((h) => (
+                <tr className="border-b bg-muted/30">
+                  {["Student", "Out Time", "In Time", "Status"].map((h) => (
                     <th
                       key={h}
-                      className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs uppercase text-muted-foreground"
                     >
                       {h}
                     </th>
@@ -81,41 +113,46 @@ export default function WardenStudentMovement() {
               </thead>
 
               <tbody>
-                {movement.length > 0 ? (
-                  movement.map((m: any, i) => (
+                {sortedMovement.length > 0 ? (
+                  sortedMovement.map((m: any, i) => (
                     <tr
                       key={i}
-                      className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors"
+                      className={`border-b hover:bg-muted/20 transition ${
+                        m.status === "OUT" ? "bg-orange-500/5" : ""
+                      }`}
                     >
-                      <td className="px-6 py-4 text-sm font-medium text-foreground">
-                        {m.student}
+                      {/* Student */}
+                      <td className="px-6 py-4 font-medium">
+                        {m.Student?.name || "Unknown"}
                       </td>
 
-                      {/* ✅ FIXED DATE */}
-                      <td className="px-6 py-4 text-sm text-muted-foreground">
-                        {formatDate(m.startDate)}
+                      {/* Out Time */}
+                      <td className="px-6 py-4 text-muted-foreground">
+                        {formatDate(m.outTime)}
                       </td>
 
-                      <td className="px-6 py-4 text-sm text-muted-foreground">
-                        {formatDate(m.endDate)}
+                      {/* In Time */}
+                      <td className="px-6 py-4 text-muted-foreground">
+                        {m.inTime ? formatDate(m.inTime) : "—"}
                       </td>
 
-                      {/* ✅ FIXED BADGE */}
+                      {/* Status */}
                       <td className="px-6 py-4">
-                        <span className={getStatusClass(m.status)}>
-                          {m.status}
+                        <span
+                          className={`px-3 py-1 text-xs rounded-full border ${getStatusClass(m.status)}`}
+                        >
+                          {getReadableStatus(m.status)}
                         </span>
                       </td>
                     </tr>
                   ))
                 ) : (
-                  // ✅ EMPTY STATE (IMPORTANT UX)
                   <tr>
                     <td
                       colSpan={4}
-                      className="px-6 py-10 text-center text-sm text-muted-foreground"
+                      className="text-center py-10 text-muted-foreground"
                     >
-                      No students currently outside 🚫
+                      No movement data available 
                     </td>
                   </tr>
                 )}
