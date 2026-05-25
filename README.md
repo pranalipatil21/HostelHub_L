@@ -1,4 +1,4 @@
-# HostelHub Dashboard - Technical Project Documentation
+# HostelHub Dashboard - 
 
 ## 1. Project Summary
 
